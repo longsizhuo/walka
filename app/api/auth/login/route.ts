@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
@@ -21,8 +22,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 返回用户信息
-    return NextResponse.json({
+    // 返回用户信息，修改了返回的内容，增加了cookies
+    const response = NextResponse.json({
         message: 'Login successful',
         user: {
             id: user.id,
@@ -30,4 +31,8 @@ export async function POST(req: Request) {
             name: user.name,
         },
     });
+
+    // 设置 cookie：保存 isLoggedIn = '1'
+    response.cookies.set('isLoggedIn', '1'); 
+    return response;
 }
