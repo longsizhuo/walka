@@ -7,7 +7,7 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* 顶部导航栏：使用重复背景图 */}
       <header
         className="text-white px-6 py-4 shadow flex items-center gap-4"
