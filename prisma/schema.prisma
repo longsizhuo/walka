@@ -25,7 +25,7 @@ model User {
 
 model Message {
   id        String   @id @default(cuid())
-  content   String
+  content   String   @db.LongText
   senderId  String
   user      User     @relation(fields: [senderId], references: [id])
   role      String   // "user" or "model"

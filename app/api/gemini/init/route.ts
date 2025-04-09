@@ -1,15 +1,17 @@
 // app/api/gemini/init/route.ts
 import {NextRequest, NextResponse} from "next/server";
 import {GeminiPromptStructTourism} from "@/app/api/prompt";
+import { saveMessages } from "@/app/components/SaveMessage";
 import 'dotenv/config';
 import {GoogleGenAI} from "@google/genai";
+import {safeChatWithGemini, tryExtractJson} from "@/app/components/geminiJSON";
 
 const ai = new GoogleGenAI(({apiKey: process.env.API_KEY_GEMINI}))
 
 // 首页, 用于接收用户首次生成
 export async function POST(req: NextRequest){
     try {
-        const { message } = await req.json();
+        const {message} = await req.json();
         // we can support stream response here
         const response = await ai.models.generateContent(
             {
@@ -19,32 +21,52 @@ export async function POST(req: NextRequest){
                          `
             }
         );
-        const text = response.text;
-        // 尝试直接解析 JSON
-        try {
-            if (text != null) {
-                const json = JSON.parse(text);
-                return NextResponse.json(json);
-            } else {
-                return NextResponse.json({ error: "No text returned from Gemini" });
-            }
-        } catch {
-            // 如果直接解析失败，尝试用正则提取 JSON 块
-            if (text != null) {
-                const match = text.match(/\{[\s\S]*}/);
-                if (match) {
-                    try {
-                        const json = JSON.parse(match[0]);
-                        return NextResponse.json(json);
-                    } catch {}
-                }
-            } else {
-                return NextResponse.json({ error: "No text returned from Gemini" });
-            }
-            return NextResponse.json({ error: "Invalid JSON from Gemini", raw: text });
+        const text = response.text ?? "No response from Gemini";
+
+        // 保存消息记录, 无论是否能解析, 都先记住
+        const sessionId = crypto.randomUUID(); // 随机ID
+        await saveMessages({
+            email: "test@example.com", // TODO: 临时值, 要记得改
+            sessionId,
+            userMessage: message,
+            modelReply: text,
+        });
+        const parsed = tryExtractJson(text);
+        if (parsed.success) {
+            return NextResponse.json({...parsed.json, sessionId});
         }
+
+        // 如果失败，尝试用二次 prompt 要求输出 JSON
+        const retry = await safeChatWithGemini({message, sessionId});
+        if (retry.success && typeof retry.json === 'object') {
+            await saveMessages({
+                email: "test@example.com", // TODO: 临时值, 要记得改
+                sessionId,
+                userMessage: "[Save Prompt]",
+                modelReply: retry.raw,
+            });
+            return NextResponse.json({
+                ...retry.json,
+                sessionId
+            });
+        } else {
+            // 处理失败的情况
+            await saveMessages({
+                email: "test@example.com", // TODO: 临时值, 要记得改
+                sessionId,
+                userMessage: "[系统提示]",
+                modelReply: retry.raw,
+            });
+            return NextResponse.json({
+                success: false,
+                message: "Gemini failed to return valid JSON. Please try rephrasing your question.",
+                raw: retry.raw,
+                sessionId
+            });
+        }
+
     } catch (error) {
-        console.error("Error in Gemini API:", error);
-        return NextResponse.json({ error: "Internal Server Error" });
+        console.error("Error in Gemini init API:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

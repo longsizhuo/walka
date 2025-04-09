@@ -10,6 +10,8 @@ export default function ChatPage() {
     const [input, setInput] = useState('');
     const [plan, setPlan] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+
 
     useEffect(() => {
         async function fetchInitialPlan() {
@@ -22,27 +24,7 @@ export default function ChatPage() {
             console.log(query)
             console.log('Plan:', data);
             setPlan(data);
-
-            /*
-                  // 💾 自动保存 JSON 文件
-            const blob = new Blob([JSON.stringify(data, null, 2)], {
-              type: 'application/json',
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `travel-plan-${new Date()
-              .toISOString()
-              .slice(0, 19)
-              .replace(/[:T]/g, '-')}.json`;
-            // a.click(); // 禁用此行以禁用自动下载json文件
-            URL.revokeObjectURL(url);
-          } catch (err) {
-            console.error(err);
-          } finally {
-            setLoading(false);
-          }
-             */
+            setSessionId(data.sessionId);
         }
 
         if (query) {
@@ -62,7 +44,7 @@ export default function ChatPage() {
             const res = await fetch('/api/gemini/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message }),
+                body: JSON.stringify({ message, sessionId }),
             });
 
             const data = await res.json();
