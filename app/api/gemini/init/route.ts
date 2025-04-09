@@ -11,7 +11,7 @@ const ai = new GoogleGenAI(({apiKey: process.env.API_KEY_GEMINI}))
 // 首页, 用于接收用户首次生成
 export async function POST(req: NextRequest){
     try {
-        const {message} = await req.json();
+        const {message, email} = await req.json();
         // we can support stream response here
         const response = await ai.models.generateContent(
             {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest){
         // 保存消息记录, 无论是否能解析, 都先记住
         const sessionId = crypto.randomUUID(); // 随机ID
         await saveMessages({
-            email: "test@example.com", // TODO: 临时值, 要记得改
+            email: email, // TODO: 临时值, 要记得改
             sessionId,
             userMessage: message,
             modelReply: text,
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest){
         const retry = await safeChatWithGemini({message, sessionId});
         if (retry.success && typeof retry.json === 'object') {
             await saveMessages({
-                email: "test@example.com", // TODO: 临时值, 要记得改
+                email: email, // TODO: 临时值, 要记得改
                 sessionId,
                 userMessage: "[Save Prompt]",
                 modelReply: retry.raw,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest){
         } else {
             // 处理失败的情况
             await saveMessages({
-                email: "test@example.com", // TODO: 临时值, 要记得改
+                email: email, // TODO: 临时值, 要记得改
                 sessionId,
                 userMessage: "[系统提示]",
                 modelReply: retry.raw,

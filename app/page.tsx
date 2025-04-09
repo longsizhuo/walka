@@ -20,6 +20,9 @@ export default function AboriginalTourismHomePage() {
     const [query, setQuery] = useState('');
     const [plan, setPlan] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    //TODO: 登录逻辑保存用户信息
+    // const [user, setUser] = useState(null);
+    // const [email, setEmail] = useState('');
     const basePath = process.env.NODE_ENV === 'production' ? "/walka" : '';
     const router = useRouter();
     async function handleSubmit() {
