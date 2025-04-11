@@ -1,5 +1,7 @@
+
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
+
 
 const prisma = new PrismaClient();
 
@@ -11,17 +13,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Missing email or password' }, { status: 400 });
     }
 
-    // 查找用户
-    const user = await prisma.user.findUnique({
-        where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    // 简单验证密码
     if (!user || user.password !== password) {
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 返回用户信息
+
     return NextResponse.json({
         message: 'Login successful',
         user: {
@@ -31,3 +29,4 @@ export async function POST(req: Request) {
         },
     });
 }
+
