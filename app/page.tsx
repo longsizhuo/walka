@@ -14,7 +14,7 @@ import {
     Checkbox
 } from 'antd';
 import 'antd/dist/reset.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const { Header, Content, Footer } = Layout;
@@ -33,6 +33,23 @@ export default function AboriginalTourismHomePage() {
     const [loading, setLoading] = useState(false);
     const [isLoginVisible, setIsLoginVisible] = useState(false);
     const [isRegisterVisible, setIsRegisterVisible] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [registerEmail, setRegisterEmail] = useState('');
+    const [registerPassword, setRegisterPassword] = useState('');
+    const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            setIsLoggedIn(true);
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
+
+
+
     const basePath = process.env.NODE_ENV === 'production' ? "/walka" : '';
     const router = useRouter();
 
@@ -50,7 +67,102 @@ export default function AboriginalTourismHomePage() {
         }
         router.push(`/chat?query=${encodeURIComponent(query)}`);
     }
+    function handleLogout() {
+        localStorage.removeItem('user');
+        setIsLoggedIn(false);
+        setUser(null);
+        Modal.info({ title: 'Logged Out' });
+    }    
+    async function handleLogin() {
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+    
+            const data = await res.json();
+    
+            if (!res.ok) {
+                // 显示错误信息
+                alert(`Maybe there is somthing wrong.Please check your account.`);
+                Modal.error({
+                    title: 'Login Failed',
+                    content: data.error || 'Unknown error occurred',
+                });
+                return;
+            }
+            localStorage.setItem('user', JSON.stringify(data.user));
+            setIsLoggedIn(true);
+            setUser(data.user);
 
+            Modal.success({
+                title: 'Login Success',
+                content: 'Welcome back!',
+            });
+    
+            // 关闭登录框
+            setIsLoginVisible(false);
+    
+            // 可选：跳转页面
+            // router.push('/dashboard');
+        } catch (error) {
+
+            Modal.error({
+                title: 'Login Error',
+                content: 'Something went wrong. Please try again later.',
+            });
+            console.error('Login error:', error);
+        }
+    }
+    async function handleRegister() {
+        if (!registerEmail || !registerPassword || !registerConfirmPassword) {
+            Modal.warning({ title: 'Missing Fields', content: 'Please fill all fields.' });
+            return;
+        }
+    
+        if (registerPassword !== registerConfirmPassword) {
+            Modal.warning({ title: 'Password Mismatch', content: 'Passwords do not match.' });
+            return;
+        }
+    
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: registerEmail,
+                    password: registerPassword,
+                }),
+            });
+    
+            const data = await res.json();
+    
+            if (!res.ok) {
+                alert(`Maybe there is somthing wrong.Please check your account.`)
+                Modal.error({
+                    title: 'Register Failed',
+                    content: data.error || 'Unknown error occurred',
+                });
+                return;
+            }
+    
+            Modal.success({
+                title: 'Register Success',
+                content: 'You can now log in!',
+            });
+    
+            setIsRegisterVisible(false);
+            setIsLoginVisible(true);
+        } catch (error) {
+            console.error('Register error:', error);
+            Modal.error({
+                title: 'Register Error',
+                content: 'Something went wrong. Please try again later.',
+            });
+        }
+    }
+    
     return (
         <Layout
             style={{
@@ -83,8 +195,17 @@ export default function AboriginalTourismHomePage() {
                     ))}
                 </Menu>
                 <Space>
-                    <Button onClick={showLogin}>Login</Button>
-                    <Button type="primary" onClick={showRegister}>Register</Button>
+                    {isLoggedIn && user ? (
+                        <>
+                            <span style={{ color: '#FFF1B8' }}>👤 {user.email}</span>
+                            <Button onClick={handleLogout}>Logout</Button>
+                        </>
+                     ) : (
+                        <>
+                            <Button onClick={showLogin}>Login</Button>
+                            <Button type="primary" onClick={showRegister}>Register</Button>
+                        </>
+            )}
                 </Space>
             </Header>
 
@@ -119,8 +240,19 @@ export default function AboriginalTourismHomePage() {
                             borderColor: '#FFD666'
                         }}
                     />
+                    
                     <Button
-                        onClick={handleSubmit}
+                        onClick={() => {
+                            if (!isLoggedIn) {
+                                alert(`Maybe there is somthing wrong.Please log in before your try.`)
+                                Modal.warning({
+                                    title: 'Please Login',
+                                    content: 'You need to log in to generate a plan.',
+                                });
+                                return;
+                            }
+                            handleSubmit();
+                        }}
                         disabled={loading}
                         style={{
                             background: '#FFD666',
@@ -134,6 +266,7 @@ export default function AboriginalTourismHomePage() {
                     >
                         {loading ? 'Generating...' : 'Generate Plan'}
                     </Button>
+
 
                     {plan && plan.plan && (
                         <div style={{ marginTop: 24 }}>
@@ -229,13 +362,21 @@ export default function AboriginalTourismHomePage() {
                 footer={null}
             >
                 <Space direction="vertical" style={{ width: '100%' }}>
-                    <Input placeholder="Email" />
-                    <Input.Password placeholder="Password" />
+                    <Input 
+                        placeholder="Email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <Input.Password 
+                        placeholder="Password" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
                     <Space style={{ justifyContent: 'space-between', width: '100%' }}>
                         <Checkbox>Remember me</Checkbox>
                         <a>Forgot password?</a>
                     </Space>
-                    <Button type="primary" block>Login</Button>
+                    <Button type="primary" block onClick={handleLogin}>Login</Button>
                     <a style={{ textAlign: 'center' }} onClick={() => {
                         setIsLoginVisible(false);
                         setIsRegisterVisible(true);
@@ -251,10 +392,22 @@ export default function AboriginalTourismHomePage() {
                 footer={null}
             >
                 <Space direction="vertical" style={{ width: '100%' }}>
-                    <Input placeholder="Email" />
-                    <Input.Password placeholder="Password" />
-                    <Input.Password placeholder="Confirm Password" />
-                    <Button type="primary" block>Register</Button>
+                    <Input 
+                        placeholder="Email" 
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                    />
+                    <Input.Password 
+                        placeholder="Password"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)} 
+                    />
+                    <Input.Password 
+                        placeholder="Confirm Password" 
+                        value={registerConfirmPassword}
+                        onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                    />
+                    <Button type="primary" block onClick={handleRegister}>Register</Button>
                     <a style={{ textAlign: 'center' }} onClick={() => {
                         setIsRegisterVisible(false);
                         setIsLoginVisible(true);
