@@ -57,47 +57,49 @@ export default function ChatPage() {
     }
     return (
         <>
-            {/* 左侧：旅行计划展示区 */}
-            <section className="w-1/2 p-6 border-r overflow-auto h-screen">
-                <h2 className="text-xl font-semibold mb-4">📋 旅行计划生成区</h2>
-                {plan ? (
-                    <TravelPlan planData={plan} />
-                ) : (
-                    <p className="text-gray-600">
-                        {loading
-                            ? '正在生成旅行计划，请稍候...'
-                            : '请输入旅行需求并点击发送。'}
-                    </p>
-                )}
-            </section>
+            <div className={"flex w-full h-full"}>
+                {/* 左侧：旅行计划展示区 */}
+                <section className="w-1/2 p-6 border-r overflow-auto h-screen">
+                    <h2 className="text-xl font-semibold mb-4">📋 旅行计划生成区</h2>
+                    {plan ? (
+                        <TravelPlan planData={plan} />
+                    ) : (
+                        <p className="text-gray-600">
+                            {loading
+                                ? '正在生成旅行计划，请稍候...'
+                                : '请输入旅行需求并点击发送。'}
+                        </p>
+                    )}
+                </section>
 
-            {/* 右侧：未来地图区域 + 输入框 */}
-            <section className="w-1/2 p-6 flex flex-col h-screen">
-                {/* 🗺️ 路线图占位符区域 */}
-                <div className="flex-1 border rounded bg-gray-50 flex items-center justify-center text-gray-400 text-lg italic">
-                    {plan && <GoogleMap locations={plan.plan} />}
-                </div>
+                {/* 右侧：未来地图区域 + 输入框 */}
+                <section className="w-1/2 p-6 flex flex-col h-screen">
+                    {/* 🗺️ 路线图占位符区域 */}
+                    <div className="flex-1 border rounded bg-gray-50 flex items-center justify-center text-gray-400 text-lg italic">
+                        {plan && <GoogleMap locations={plan.plan} />}
+                    </div>
 
-                {/* 输入框 */}
-                <div className="mt-4 flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="输入你的旅行需求..."
-                        className="flex-grow p-2 border rounded"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                        disabled={loading}
-                    />
-                    <button
-                        className="bg-blue-600 text-white px-4 py-2 rounded"
-                        onClick={() => handleSubmit()}
-                        disabled={loading}
-                    >
-                        {loading ? '生成中...' : '发送'}
-                    </button>
-                </div>
-            </section>
+                    {/* 输入框 */}
+                    <div className="mt-4 flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="输入你的旅行需求..."
+                            className="flex-grow p-2 border rounded"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                            disabled={loading}
+                        />
+                        <button
+                            className="bg-blue-600 text-white px-4 py-2 rounded"
+                            onClick={() => handleSubmit()}
+                            disabled={loading}
+                        >
+                            {loading ? '生成中...' : '发送'}
+                        </button>
+                    </div>
+                </section>
+            </div>
         </>
     );
 }

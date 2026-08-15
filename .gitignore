@@ -42,3 +42,8 @@ next-env.d.ts
 
 ./.idea
 package-lock.json
+# 含明文 API Key, 禁止入库
+app/api/mcp.json
+
+# IDE 配置
+.idea/
